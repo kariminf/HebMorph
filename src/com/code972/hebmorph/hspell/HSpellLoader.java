@@ -21,26 +21,21 @@ import com.code972.hebmorph.DictionaryLoader;
 import com.code972.hebmorph.MorphData;
 import com.code972.hebmorph.datastructures.DictHebMorph;
 import com.code972.hebmorph.datastructures.DictRadix;
-import org.apache.lucene.analysis.hebrew.HebrewExactAnalyzer;
-import org.apache.lucene.analysis.hebrew.HebrewIndexingAnalyzer;
-import org.apache.lucene.analysis.hebrew.HebrewQueryAnalyzer;
-import org.apache.lucene.analysis.hebrew.HebrewQueryLightAnalyzer;
 
 import java.io.*;
 import java.nio.charset.Charset;
 import java.util.*;
-import java.util.zip.GZIPInputStream;
 
 public final class HSpellLoader {
 
-    public static final String dictionaryFile = "hebrew.wgz";
-    public static final String prefixesFile = dictionaryFile + ".prefixes";
-    public static final String stemsFile = dictionaryFile + ".stems";
-    public static final String descFile = dictionaryFile + ".desc";
-    public static final String sizesFile = dictionaryFile + ".sizes";
+    public static final String dictionaryFile = "hebrew.dict";
+    public static final String prefixesFile = "hebrew.prefixes";
+    public static final String stemsFile = "hebrew.stems";
+    public static final String descFile = "hebrew.desc";
+    public static final String sizesFile = "hebrew.sizes";
     public static final String dmaskFile = "dmask.c";
 
-    public final static String PREFIX_H = "prefix_h.gz", PREFIX_NOH = "prefix_noH.gz";
+    public final static String PREFIX_H = "prefix_h", PREFIX_NOH = "prefix_noH";
 
     protected List<Integer> dmasks;
     protected final boolean loadMorphData;
@@ -49,13 +44,10 @@ public final class HSpellLoader {
     protected InputStream fdict, fprefixes;
     protected InputStream fdesc = null, fstem = null;
 
-    public HSpellLoader(File hspellFolder, boolean loadMorphData) throws IOException {
-        this(new FileInputStream(new File(hspellFolder, sizesFile)), new FileInputStream(new File(hspellFolder, dmaskFile)),
-                new FileInputStream(new File(hspellFolder, dictionaryFile)), new FileInputStream(new File(hspellFolder, prefixesFile)),
-                new FileInputStream(new File(hspellFolder, descFile)), new FileInputStream(new File(hspellFolder, stemsFile)), loadMorphData);
-
-        if (!hspellFolder.exists() || !hspellFolder.isDirectory())
-            throw new IllegalArgumentException("Invalid hspell data folder provided");
+    public HSpellLoader(boolean loadMorphData) throws IOException {
+        this(getHspellStream(sizesFile), getHspellStream(dmaskFile),
+        		getHspellStream(dictionaryFile), getHspellStream(prefixesFile),
+        		getHspellStream(descFile), getHspellStream(stemsFile), loadMorphData);
     }
 
     /**
@@ -71,8 +63,8 @@ public final class HSpellLoader {
     }
 
     public HSpellLoader(InputStream sizesFile, InputStream dmasksFile, InputStream dictFile, InputStream prefixesFile, InputStream descFile, InputStream stemsFile, boolean loadMorphData) throws IOException {
-        fdict = new GZIPInputStream(dictFile);
-        fprefixes = new GZIPInputStream(prefixesFile);
+        fdict = dictFile;
+        fprefixes = prefixesFile;
         this.loadMorphData = loadMorphData;
 
         if (loadMorphData) {
@@ -94,15 +86,21 @@ public final class HSpellLoader {
             }
             reader.close();
             lookupLen = getWordCountInHSpellFolder(sizesFile);
-            fdesc = new GZIPInputStream(descFile);
-            fstem = new GZIPInputStream(stemsFile);
+            fdesc = descFile;
+            fstem = stemsFile;
         }
     }
 
+    
+    public static InputStream getHspellStream (String filename){
+    	return DictionaryLoader.class.getResourceAsStream("hspell-data-files/" + filename);
+    }
+    
     public static String getHspellPath() {
         String hspellPath = null;
         ClassLoader classLoader = DictionaryLoader.class.getClassLoader();
         File folder = new File(classLoader.getResource("").getPath());
+        //System.out.println(folder.getAbsolutePath());
         while (true) {
             File tmp = new File(folder, "hspell-data-files");
             if (tmp.exists() && tmp.isDirectory()) {
@@ -118,21 +116,22 @@ public final class HSpellLoader {
         if (!hspellPath.endsWith("/")) {
             hspellPath += "/";
         }
+        //System.out.println(">>>" + hspellPath);
         return hspellPath;
     }
 
     public static HashMap<String, Integer> readDefaultPrefixes() {
-        return readPrefixesFromFile(HSpellLoader.getHspellPath() + HSpellLoader.PREFIX_NOH);
+        return readPrefixesFromFile(HSpellLoader.getHspellStream(HSpellLoader.PREFIX_NOH));
     }
 
     //used when loading using the Loader and thus prefixes aren't loaded automatically
-    public static HashMap<String, Integer> readPrefixesFromFile(String prefixPath) {
+    public static HashMap<String, Integer> readPrefixesFromFile(InputStream stream) {
         HashMap<String, Integer> map = new HashMap<>();
-        GZIPInputStream reader = null;
+        //GZIPInputStream reader = null;
         BufferedReader bufferedReader = null;
         try {
-            reader = new GZIPInputStream(new FileInputStream(prefixPath));
-            bufferedReader = new BufferedReader(new InputStreamReader(reader, DictionaryLoader.ENCODING_USED));
+            //reader = new InputStreamReaderstream;
+            bufferedReader = new BufferedReader(new InputStreamReader(stream, DictionaryLoader.ENCODING_USED));
             String str;
             while ((str = bufferedReader.readLine()) != null) {
                 String[] split = str.split(DictionaryLoader.DELIMETER);
@@ -150,10 +149,7 @@ public final class HSpellLoader {
                 bufferedReader.close();
             } catch (IOException ignored) {
             }
-            if (reader != null) try {
-                reader.close();
-            } catch (IOException ignored) {
-            }
+            
         }
         return map;
     }
@@ -361,7 +357,7 @@ public final class HSpellLoader {
 
         final BufferedReader input = new BufferedReader(new InputStreamReader(customWordsStream, Charset.forName("UTF-8")));
         final Hashtable<String, String> secondPass = new Hashtable<>();
-        final DictRadix<MorphData> custom = new DictRadix<>();
+        final DictRadix<MorphData> custom = new DictRadix<MorphData>();
         String line;
         while ((line = input.readLine()) != null) {
             String[] cells = line.split(" ");
@@ -453,28 +449,17 @@ public final class HSpellLoader {
         }
         return num;
     }
-
-    public static HebrewIndexingAnalyzer getHebrewIndexingAnalyzer() throws IOException {
-        DictRadix<MorphData> radix = new HSpellLoader(new File(HSpellLoader.getHspellPath()), true).loadDictionaryFromHSpellData();
-        HashMap<String, Integer> prefs = HSpellLoader.readPrefixesFromFile(HSpellLoader.getHspellPath() + HSpellLoader.PREFIX_NOH);
-        return new HebrewIndexingAnalyzer(new DictHebMorph(radix, prefs));
+    
+    public static DictHebMorph getDictHebMorph() {
+    	DictRadix<MorphData> radix = null;
+		try {
+			radix = new HSpellLoader(true).loadDictionaryFromHSpellData();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+        HashMap<String, Integer> prefs = HSpellLoader.readPrefixesFromFile(HSpellLoader.getHspellStream(HSpellLoader.PREFIX_NOH));
+        return new DictHebMorph(radix, prefs);
     }
 
-    public static HebrewQueryAnalyzer getHebrewQueryAnalyzer() throws IOException {
-        DictRadix<MorphData> radix = new HSpellLoader(new File(HSpellLoader.getHspellPath()), true).loadDictionaryFromHSpellData();
-        HashMap<String, Integer> prefs = HSpellLoader.readPrefixesFromFile(HSpellLoader.getHspellPath() + HSpellLoader.PREFIX_NOH);
-        return new HebrewQueryAnalyzer(new DictHebMorph(radix, prefs));
-    }
-
-    public static HebrewQueryLightAnalyzer getHebrewQueryLightAnalyzer() throws IOException {
-        DictRadix<MorphData> radix = new HSpellLoader(new File(HSpellLoader.getHspellPath()), true).loadDictionaryFromHSpellData();
-        HashMap<String, Integer> prefs = HSpellLoader.readPrefixesFromFile(HSpellLoader.getHspellPath() + HSpellLoader.PREFIX_NOH);
-        return new HebrewQueryLightAnalyzer(new DictHebMorph(radix, prefs));
-    }
-
-    public static HebrewExactAnalyzer getHebrewExactAnalyzer() throws IOException {
-        DictRadix<MorphData> radix = new HSpellLoader(new File(HSpellLoader.getHspellPath()), true).loadDictionaryFromHSpellData();
-        HashMap<String, Integer> prefs = HSpellLoader.readPrefixesFromFile(HSpellLoader.getHspellPath() + HSpellLoader.PREFIX_NOH);
-        return new HebrewExactAnalyzer(new DictHebMorph(radix, prefs));
-    }
+    
 }
