@@ -1,8 +1,17 @@
+# KHebMorph
+
+[![Project](https://img.shields.io/badge/Project-KHebMorph-4B0082.svg)](https://github.com/kariminf/SentRep)
+[![License](https://img.shields.io/badge/License-AGPL--3.0-4B0082.svg)](https://www.gnu.org/licenses/agpl-3.0.en.html)
+[![jitpack](https://jitpack.io/v/kariminf/KHebMorph.svg)](https://jitpack.io/#kariminf/KHebMorph)
+
+KHebMorph is a fork of the project HebMorph, The code is modified to integrate hspell files directly into the package, since the files and the project have the same license.
+
+## HebMorph
+
 HebMorph is an open-source effort for making Hebrew properly searchable by various IR software libraries, while maintaining decent recall, precision and relevancy in retrievals. All code and files are released under the GNU Affero General Public License version 3.
 
 More details at http://code972.com/HebMorph
 
-![](https://travis-ci.org/synhershko/HebMorph.svg?branch=master)
 
 
 ## License
