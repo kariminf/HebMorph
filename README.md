@@ -1,8 +1,8 @@
-# KHebMorph
+# K-HebMorph
 
-[![Project](https://img.shields.io/badge/Project-KHebMorph-4B0082.svg)](https://github.com/kariminf/SentRep)
+[![Project](https://img.shields.io/badge/Project-K--HebMorph-4B0082.svg)](https://github.com/kariminf/k-hebmorph)
 [![License](https://img.shields.io/badge/License-AGPL--3.0-4B0082.svg)](https://www.gnu.org/licenses/agpl-3.0.en.html)
-[![jitpack](https://jitpack.io/v/kariminf/KHebMorph.svg)](https://jitpack.io/#kariminf/KHebMorph)
+[![jitpack](https://jitpack.io/v/kariminf/k-hebmorph.svg)](https://jitpack.io/#kariminf/k-hebmorph)
 
 KHebMorph is a fork of the project HebMorph, The code is modified to integrate hspell files directly into the package, since the files and the project have the same license.
 
